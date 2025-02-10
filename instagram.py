@@ -17,8 +17,8 @@ driver.get("https://www.instagram.com/accounts/login/")
 time.sleep(2)
 
 # 로그인 정보 입력
-id = "tla1503@naver.com"
-pw = "tlarbqh99!"
+id = ""
+pw = ""
 inputs = driver.find_elements(By.TAG_NAME, "input")
 inputs[0].send_keys(id)
 inputs[1].send_keys(pw)
