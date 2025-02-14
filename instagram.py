@@ -45,34 +45,35 @@ post_urls = [post.get_attribute("href") for post in post_links]
 # data lists
 # 결과를 저장할 리스트
 all_comments_data = []
-id_f=[]
-rp_f=[]
+
 
 
 
 # 각 게시물로 이동해 댓글 크롤링
 for post_url in post_urls:
     driver.get(post_url)
+    id_f=[]
+    rp_f=[]
     time.sleep(10)
 
     comments_section = WebDriverWait(driver, 10).until(
     EC.visibility_of_element_located((By.CSS_SELECTOR, "ul._a9z6._a9za"))
     )
     
-    comment_more_btn = "button[aria-label='Load more comments']"
-    '''while True:
+    for i in range(2):
+        comment_more_btn = "ul._a9z6._a9za li div button[class='_abl-'][type='button']"
         try:
             more_btn = driver.find_element(By.CSS_SELECTOR, comment_more_btn)
             more_btn.click()
-            time.sleep(2)  # 페이지 로딩을 기다리기 위해 잠시 대기
+            time.sleep(5)  # 페이지 로딩을 기다리기 위해 잠시 대기
             print("더보기 버튼 클릭")
         except:
             print("더보기 버튼이 더 이상 존재하지 않습니다.")
             break
-        '''
+
 
     # 아이디와 댓글 내용 추출
-    ids = driver.find_elements(By.CSS_SELECTOR, "ul._a9z6._a9za li a[role='link']")
+    ids = driver.find_elements(By.CSS_SELECTOR, "ul._a9z6._a9za li h3 a[role='link'][tabindex='0'][href^='/']")
     replies = driver.find_elements(By.CSS_SELECTOR, "ul._a9z6._a9za li span[dir='auto']._aaco")
 
     # zip으로 아이디와 댓글 매핑
