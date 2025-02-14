@@ -53,14 +53,14 @@ rp_f=[]
 # 각 게시물로 이동해 댓글 크롤링
 for post_url in post_urls:
     driver.get(post_url)
-    time.sleep(3)
+    time.sleep(10)
 
     comments_section = WebDriverWait(driver, 10).until(
     EC.visibility_of_element_located((By.CSS_SELECTOR, "ul._a9z6._a9za"))
     )
     
     comment_more_btn = "button[aria-label='Load more comments']"
-    while True:
+    '''while True:
         try:
             more_btn = driver.find_element(By.CSS_SELECTOR, comment_more_btn)
             more_btn.click()
@@ -69,6 +69,7 @@ for post_url in post_urls:
         except:
             print("더보기 버튼이 더 이상 존재하지 않습니다.")
             break
+        '''
 
     # 아이디와 댓글 내용 추출
     ids = driver.find_elements(By.CSS_SELECTOR, "ul._a9z6._a9za li a[role='link']")
