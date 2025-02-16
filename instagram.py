@@ -34,7 +34,7 @@ except Exception as e:
     print("알림 창을 찾지 못했습니다:", e)
 
 # 계정 페이지로 이동
-profile_url = "https://www.instagram.com/panibottle_official/"
+profile_url = "https://www.instagram.com/jbkwak/"
 
 # URL에서 마지막 '/' 제거
 if profile_url.endswith('/'):
@@ -65,6 +65,7 @@ for post_url in post_urls:
     driver.get(post_url)
     id_f=[]
     rp_f=[]
+    rt_f=[]
     time.sleep(10)
 
     comments_section = WebDriverWait(driver, 10).until(
@@ -83,21 +84,30 @@ for post_url in post_urls:
             break
 
 
-    # 아이디와 댓글 내용 추출
+    #게시글 작성 일자
+    date_of_upload = driver.find_element(By.CSS_SELECTOR, "div.x1yztbdb.x1h3rv7z.x1swvt13 div div a span time")
+
+    # 아이디와 댓글 내용, 댓글의 작성 날짜 추출
     ids = driver.find_elements(By.CSS_SELECTOR, "ul._a9z6._a9za li h3 a[role='link'][tabindex='0'][href^='/']")
     replies = driver.find_elements(By.CSS_SELECTOR, "ul._a9z6._a9za li span[dir='auto']._aaco")
+    time_elements = driver.find_elements(By.CSS_SELECTOR, "ul._a9z6._a9za div._a9zr div span time._a9ze._a9zf")
+
+
 
     # zip으로 아이디와 댓글 매핑
-    for id_element, reply_element in zip(ids, replies):
+    for id_element, reply_element, time_element in zip(ids, replies, time_elements):
         id_f.append(id_element.text.strip())
         rp_f.append(reply_element.text.strip())
+        rt_f.append(time_element.get_attribute("title"))
 
     # 각 게시물에 대해 추출된 데이터를 리스트에 저장
     for i in range(len(id_f)):
         all_comments_data.append({
-            "게시물 URL": post_url,
+            "게시물 URL": post_url if i == 0 else "",  # 첫 번째 행만 표시
+            "게시물 날짜": date_of_upload.get_attribute("title") if i == 0 else "",  # 첫 번째 행만 표시
             "작성자": id_f[i],
-            "댓글": rp_f[i]
+            "댓글": rp_f[i],
+            "댓글 작성일": rt_f[i]
         })
 
 # DataFrame 생성
