@@ -34,12 +34,23 @@ except Exception as e:
     print("알림 창을 찾지 못했습니다:", e)
 
 # 계정 페이지로 이동
-profile_url = "https://www.instagram.com/c____chae/"
+profile_url = "https://www.instagram.com/panibottle_official/"
+
+# URL에서 마지막 '/' 제거
+if profile_url.endswith('/'):
+    profile_url = profile_url[:-1]
+
+# 문자열 대체로 'https://www.instagram.com/' 제거
+username = profile_url.replace("https://www.instagram.com/", "")
+
+# 최종 파일명 생성
+file_name = f"instagram_comments_{username}.xlsx"
+
 driver.get(profile_url)
 time.sleep(5)
 
 # 최신 게시물 5개의 URL 가져오기
-post_links = driver.find_elements(By.CSS_SELECTOR, 'a[href*="/reel/"]')[:5]  
+post_links = driver.find_elements(By.CSS_SELECTOR, 'div.xg7h5cd.x1n2onr6 div div a[href*="/"][role="link"]')[:5]  
 post_urls = [post.get_attribute("href") for post in post_links]
 
 # data lists
@@ -93,7 +104,7 @@ for post_url in post_urls:
 df = pd.DataFrame(all_comments_data)
 
 # 엑셀 파일로 저장
-df.to_excel("instagram_comments.xlsx", index=False)
+df.to_excel(file_name, index=False)
 print("댓글 데이터가 엑셀 파일로 저장되었습니다.")
 
 driver.quit()
