@@ -87,6 +87,10 @@ for post_url in post_urls:
     #게시글 작성 일자
     date_of_upload = driver.find_element(By.CSS_SELECTOR, "div.x1yztbdb.x1h3rv7z.x1swvt13 div div a span time")
 
+    #게시글 좋아요 수
+    like_num = driver.find_element(By.CSS_SELECTOR, "section.x12nagc.x182iqb8.x1pi30zi.x1swvt13 div div span a span span")
+
+
     # 아이디와 댓글 내용, 댓글의 작성 날짜 추출
     ids = driver.find_elements(By.CSS_SELECTOR, "ul._a9z6._a9za li h3 a[role='link'][tabindex='0'][href^='/']")
     replies = driver.find_elements(By.CSS_SELECTOR, "ul._a9z6._a9za li span[dir='auto']._aaco")
@@ -105,6 +109,7 @@ for post_url in post_urls:
         all_comments_data.append({
             "게시물 URL": post_url if i == 0 else "",  # 첫 번째 행만 표시
             "게시물 날짜": date_of_upload.get_attribute("title") if i == 0 else "",  # 첫 번째 행만 표시
+            "게시물 좋아요 수": like_num.text.strip() if i == 0 else "",  # 첫 번째 행만 표시,
             "작성자": id_f[i],
             "댓글": rp_f[i],
             "댓글 작성일": rt_f[i]
