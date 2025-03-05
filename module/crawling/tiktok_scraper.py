@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 import warnings
 import re
 import pandas as pd
@@ -104,7 +105,7 @@ def get_latest_videos(driver, user_profile_url, max_results=5):
             if len(video_urls) >= max_results:
                 break
 
-        slow_scroll(driver, steps=10, delay=SCROLL_DELAY)
+        slow_scroll(driver, steps=5, delay=SCROLL_DELAY)
         new_height = driver.execute_script("return document.body.scrollHeight")
         if new_height == last_height:
             break
@@ -118,6 +119,14 @@ def get_latest_videos(driver, user_profile_url, max_results=5):
 def get_video_info(driver, video_url):
     driver.get(video_url)
     time.sleep(7)
+
+    try:
+        more_button = driver.find_element(By.XPATH, "//button[contains(text(), '더보기')]")
+        driver.execute_script("arguments[0].click();", more_button)
+        time.sleep(1)
+    except Exception:
+        pass
+
 
     try:
         desc_elem = driver.find_element(By.XPATH, "//h1[contains(@data-e2e, 'video-desc')]")
@@ -149,6 +158,14 @@ def get_video_info(driver, video_url):
     except:
         channel_title = ""
 
+    try:
+        date_elem = driver.find_element(By.XPATH, "//span[@data-e2e='browser-nickname']/span[last()]")
+        upload_date = date_elem.text.strip()
+    except:
+        upload_date = datetime.now().strftime('%Y-%m-%d')
+    
+    upload_date = parse_relative_date(upload_date)
+    
     return {
         "video_url": video_url,
         "description": description,
@@ -156,33 +173,73 @@ def get_video_info(driver, video_url):
         "comment_count": comment_count,
         "share_count": share_count,
         "channel_title": channel_title,
+        "upload_date": upload_date
     }
 
+def extract_video_comments(driver, video_url, max_comments=50):
+    """틱톡 동영상 댓글을 추출하는 함수."""
+    logging.info(f"댓글 추출 시작: {video_url}")
+    driver.get(video_url)
+    time.sleep(5)
+
+    # ✅ 댓글을 더 불러오기 위해 스크롤 추가 (더보기 버튼이 없을 때 사용)
+    slow_scroll(driver, steps=5, delay=2)  
+
+    comments = []
+    comment_blocks = driver.find_elements(By.XPATH, "//div[contains(@class, 'DivCommentObjectWrapper')]")
+    logging.info(f"찾은 댓글 블록 개수: {len(comment_blocks)}")
+
+    for block in comment_blocks[:max_comments]:
+        try:
+            comment_text = block.find_element(By.XPATH, ".//span[@data-e2e='comment-level-1']/p").text.strip()
+            username = block.find_element(By.XPATH, ".//div[@data-e2e='comment-username-1']//p").text.strip()
+            raw_date = block.find_element(By.XPATH, ".//div[contains(@class, 'DivCommentSubContentWrapper')]//span").text.strip()
+            comments.append([comment_text, username, raw_date, video_url])
+        except Exception as e:
+            logging.warning(f"댓글 추출 오류: {e}")
+
+    return pd.DataFrame(comments, columns=['comment', 'username', 'date', 'video_url'])
+
 # ✅ TikTok 크롤링 실행
-def extract_latest_videos_from_channel(user_profile_url, stats_file_path, max_results=5):
+def extract_latest_videos_from_channel(user_profile_url, stats_file_path, comments_file_path, max_results=5):
     driver = initialize_driver()
-    video_urls = get_latest_videos(driver, user_profile_url, max_results)
-    
-    stats_data = []
-    
-    for video_url in video_urls:
-        video_info = get_video_info(driver, video_url)
-        stats_data.append(video_info)
+    try:
+        video_urls = get_latest_videos(driver, user_profile_url, max_results)
+        
+        stats_data = []
+        comments_data = []
+        
+        for video_url in video_urls:
+            video_info = get_video_info(driver, video_url)
+            stats_data.append(video_info)
 
-    driver.quit()
-
-    stats_df = pd.DataFrame(stats_data)
+            comments_df = extract_video_comments(driver, video_url)
+            comments_data.append(comments_df)
+        
+    finally:
+        driver.quit()  # ✅ 크롬 드라이버를 안전하게 종료
+    
+    stats_df = pd.DataFrame(stats_data) if stats_data else pd.DataFrame(columns=["video_url", "description", "like_count", "comment_count", "share_count", "channel_title", "upload_date"])
     stats_df.to_excel(stats_file_path, index=False)
     print(f"통계 정보 {stats_file_path} 저장 완료.")
 
+    if comments_data:
+        comments_df = pd.concat(comments_data, ignore_index=True)
+    else:
+        comments_df = pd.DataFrame(columns=["comment", "username", "date", "video_url"])
+    comments_df.to_excel(comments_file_path, index=False)
+    print(f"댓글 정보 {comments_file_path} 저장 완료.")
+
+
+
 # ✅ 메인 실행 코드
 if __name__ == "__main__":
-    target_date = "2025-02-09"
+    target_date = "2025-03-04"
     file_suffix = target_date[2:4] + target_date[5:7] + target_date[8:10]
     
     STATS_FILE_PATH = os.path.join(os.getcwd(), f'tiktok_stats_ex1_{file_suffix}.xlsx')
-
+    comments_file = f'tiktok_comments_{file_suffix}.xlsx'
     user_profiles = ["https://www.tiktok.com/@__ralral__"]
 
     for profile_url in user_profiles:
-        extract_latest_videos_from_channel(profile_url, STATS_FILE_PATH, max_results=5)
+        extract_latest_videos_from_channel(profile_url, STATS_FILE_PATH, comments_file, max_results=5)
