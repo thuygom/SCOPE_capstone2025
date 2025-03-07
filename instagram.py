@@ -34,7 +34,7 @@ except Exception as e:
     print("알림 창을 찾지 못했습니다:", e)
 
 # 계정 페이지로 이동
-profile_url = "https://www.instagram.com/jbkwak/"
+profile_url = "https://www.instagram.com/__ralral__/"
 
 # URL에서 마지막 '/' 제거
 if profile_url.endswith('/'):
@@ -50,8 +50,29 @@ driver.get(profile_url)
 time.sleep(5)
 
 # 최신 게시물 5개의 URL 가져오기
-post_links = driver.find_elements(By.CSS_SELECTOR, 'div.xg7h5cd.x1n2onr6 div div a[href*="/"][role="link"]')[:5]  
-post_urls = [post.get_attribute("href") for post in post_links]
+post_links = driver.find_elements(By.CSS_SELECTOR, 'div.xg7h5cd.x1n2onr6 div div a[href*="/"][role="link"]')
+post_urls = []
+count = 0
+for post in post_links:
+    if count >= 5:
+        break
+    try:
+    # a 태그(post) 내부에서 svg 태그 찾기
+        icon_element = post.find_element(By.CSS_SELECTOR, 'svg')
+        icon_label = icon_element.get_attribute("aria-label")  # aria-label 값 가져오기
+        if icon_label == "고정 게시물" or icon_label == "Pinned post icon":
+            continue
+        else:
+            print(f"아이콘 라벨: {icon_label}")
+            post_url = post.get_attribute("href")
+            post_urls.append(post_url)
+            count = count + 1
+
+    except NoSuchElementException:
+        print("SVG 아이콘이 존재하지 않음")       
+
+print(post_urls)
+
 
 # data lists
 # 결과를 저장할 리스트
